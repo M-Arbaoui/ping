@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ping test tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                    <path d="M12 12l4-4"/>
+                    <path d="M12 12v6"/>
+                </svg>
+                <h1>ping test tool</h1>
+            </div>
+            <p class="subtitle">TEST YOUR NETWORK CONNECTIVITY</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <form id="pingForm" action="/ping" method="post" autocomplete="off">
+                    <div class="input-group">
+                        <label for="hostname">IP Address or Domain Name</label>
+                        <div class="input-wrapper">
+                            <input 
+                                type="text" 
+                                id="hostname" 
+                                name="hostname" 
+                                placeholder="Example: google.com or 8.8.8.8"
+                                value="{{ target or '' }}"
+                                required
+                                autofocus
+                            >
+                            <button type="submit" class="btn-primary">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                                    <path d="M12 12l4-4"/>
+                                    <path d="M12 12v6"/>
+                                </svg>
+                                <span>start</span>
+                            </button>
+                        </div>
+                        <span class="hint">Enter IP address or domain name to test</span>
+                    </div>
+                </form>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-error">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            {% if result %}
+            <div class="results">
+                <div class="results-header">
+                    <h2>نتائج الاختبار</h2>
+                    <div class="target-info">
+                        <span class="target-label">الهدف:</span>
+                        <span class="target-value">{{ target }}</span>
+                        {% if elapsed %}
+                        <span class="elapsed">({{ elapsed }}s)</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if stats %}
+                <div class="stats-grid">
+                    <div class="stat-card {{ 'success' if status == 'success' else 'warning' if status == 'partial' else 'error' }}">
+                        <div class="stat-icon">
+                            {% if status == 'success' %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            {% elif status == 'partial' %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            {% else %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Status</span>
+                            <span class="stat-value">
+                                {% if status == 'success' %}متصل{% endif %}
+                                {% if status == 'partial' %}اتصال جزئي{% endif %}
+                                {% if status == 'failed' %}غير متصل{% endif %}
+                                {% if status == 'timeout' %}مهلة منتهية{% endif %}
+                                {% if status == 'error' %}خطأ{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">الحزم المرسلة</span>
+                            <span class="stat-value">{{ stats.transmitted }}</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">الحزم المستلمة</span>
+                            <span class="stat-value">{{ stats.received }}</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card {{ 'error' if stats.loss_percent > 0 else '' }}">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">نسبة الفقد</span>
+                            <span class="stat-value">{{ stats.loss_percent }}%</span>
+                        </div>
+                    </div>
+
+                    {% if stats.avg_time is not none %}
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">متوسط الزمن</span>
+                            <span class="stat-value">{{ stats.avg_time }} ms</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="13 2 13 10 21 10"/>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">الحد الأدنى</span>
+                            <span class="stat-value">{{ stats.min_time }} ms</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">الحد الأقصى</span>
+                            <span class="stat-value">{{ stats.max_time }} ms</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="output-section">
+                    <div class="output-header">
+                        <h3>الناتج التفصيلي</h3>
+                        <button class="btn-copy" onclick="copyOutput()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
+                    <pre id="output">{{ result }}</pre>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+
+        <footer>
+            <p>أداة Ping مفتوحة المصدر | <a href="#" onclick="showApiDocs()">API DOCUMENTATION</a></p>
+        </footer>
+    </div>
+
+    <!-- API Docs Modal -->
+    <div id="apiModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API DOCUMENTATION</h2>
+                <button class="close" onclick="closeApiDocs()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>POST /api/ping</h3>
+                <p>إجراء اختبار ping وإرجاع النتائج بصيغة JSON.</p>
+                <pre class="code-block">curl -X POST http://localhost:5000/api/ping \
+  -H "Content-Type: application/json" \
+  -d '{"hostname": "google.com"}'</pre>
+
+                <h3>POST /api/validate</h3>
+                <p>التحقق من صحة عنوان IP أو اسم نطاق.</p>
+                <pre class="code-block">curl -X POST http://localhost:5000/api/validate \
+  -H "Content-Type: application/json" \
+  -d '{"hostname": "google.com"}'</pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
