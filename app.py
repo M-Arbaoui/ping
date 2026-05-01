@@ -60,7 +60,7 @@ def parse_ping_output(output):
         "times": []
     }
 
-    lines = output.split('')
+    lines = output.splitlines()
 
     for line in lines:
         # Extract individual ping times
@@ -68,23 +68,40 @@ def parse_ping_output(output):
         if time_match:
             stats["times"].append(float(time_match.group(1)))
 
-        # Extract packet stats
+        # Extract packet stats (Linux/macOS)
         packet_match = re.search(r'(\d+) packets transmitted,\s*(\d+) received', line)
         if packet_match:
             stats["transmitted"] = int(packet_match.group(1))
             stats["received"] = int(packet_match.group(2))
 
+        # Extract packet stats (Windows)
+        packet_match_win = re.search(r'Packets:\s*Sent\s*=\s*(\d+),\s*Received\s*=\s*(\d+)', line)
+        if packet_match_win:
+            stats["transmitted"] = int(packet_match_win.group(1))
+            stats["received"] = int(packet_match_win.group(2))
+
         # Extract loss percentage
         loss_match = re.search(r'(\d+)% packet loss', line)
         if loss_match:
             stats["loss_percent"] = int(loss_match.group(1))
+        else:
+            loss_match_win = re.search(r'\((\d+)% loss\)', line)
+            if loss_match_win:
+                stats["loss_percent"] = int(loss_match_win.group(1))
 
-        # Extract RTT stats
+        # Extract RTT stats (Linux/macOS)
         rtt_match = re.search(r'min/avg/max.*?=\s*([\d.]+)/([\d.]+)/([\d.]+)', line)
         if rtt_match:
             stats["min_time"] = float(rtt_match.group(1))
             stats["avg_time"] = float(rtt_match.group(2))
             stats["max_time"] = float(rtt_match.group(3))
+
+        # Extract RTT stats (Windows)
+        rtt_match_win = re.search(r'Minimum\s*=\s*([\d.]+)ms,\s*Maximum\s*=\s*([\d.]+)ms,\s*Average\s*=\s*([\d.]+)ms', line)
+        if rtt_match_win:
+            stats["min_time"] = float(rtt_match_win.group(1))
+            stats["max_time"] = float(rtt_match_win.group(2))
+            stats["avg_time"] = float(rtt_match_win.group(3))
 
     return stats
 
